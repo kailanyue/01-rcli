@@ -8,28 +8,28 @@ pub struct Opts {
     pub command: SubCommand,
 }
 
-/// 1.此处的 csv 就是 subcommand 也就是输入的参数
+// 1.此处的 csv 就是 subcommand 也就是输入的参数
 #[derive(Debug, Parser)]
 pub enum SubCommand {
-    #[command()]
+    #[command(about = "convert csv to json or yaml")]
     Csv(CsvOpts),
 }
 
-/// 1.default_value 和 default_value_t 的区别
-/// 2.short 和 long 的区别，以及 header 为什么没有 short
+// 1.default_value 和 default_value_t 的区别
+// 2.short 和 long 的区别，以及 header 为什么没有 short
 
 #[derive(Debug, Parser)]
 pub struct CsvOpts {
-    #[arg(short, long, value_parser = verify_input_file)]
+    #[arg(short, long, value_parser = verify_input_file, help = "csv file path")]
     pub input: String,
 
-    #[arg(short, long, default_value = "output.csv")]
+    #[arg(short, long, default_value = "output.csv", help = "output file path")]
     pub output: String,
 
-    #[arg(short, long, default_value_t = ',')]
+    #[arg(short, long, default_value_t = ',', help = "csv delimiter")]
     pub delimiter: char,
 
-    #[arg(long, default_value_t = true)]
+    #[arg(long, default_value_t = true, help = "csv header")]
     pub header: bool,
 }
 

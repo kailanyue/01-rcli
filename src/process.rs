@@ -4,8 +4,8 @@ use anyhow::Result;
 use csv::Reader;
 use serde::{Deserialize, Serialize};
 
-/// 1.可以使用 #[serde(rename_all = "PascalCase")] 来自动实现字段名和属性名的映射
-/// 2.也可以使用 #[serde(rename = "Kit Number")] 来实现字段名和属性名的映射
+// 1.可以使用 #[serde(rename_all = "PascalCase")] 来自动实现字段名和属性名的映射
+// 2.也可以使用 #[serde(rename = "Kit Number")] 来实现字段名和属性名的映射
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "PascalCase")]
 // Name,Position,DOB,Nationality,Kit Number
