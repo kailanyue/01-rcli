@@ -11,8 +11,10 @@ pub struct Opts {
 // 1.此处的 csv 就是 subcommand 也就是输入的参数
 #[derive(Debug, Parser)]
 pub enum SubCommand {
-    #[command(about = "convert csv to json or yaml")]
+    #[command(name = "csv", about = "convert csv to json or yaml")]
     Csv(CsvOpts),
+    #[command(name = "genpass", about = "generate password")]
+    GenPass(GenPassOpts),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -40,6 +42,24 @@ pub struct CsvOpts {
 
     #[arg(long, default_value_t = true, help = "csv header")]
     pub header: bool,
+}
+
+#[derive(Debug, Parser)]
+pub struct GenPassOpts {
+    #[arg(short, long, default_value_t = 16, help = "password length")]
+    pub length: u8,
+
+    #[arg(long, default_value = "true", help = "include uppercase letters")]
+    pub uppercase: String,
+
+    #[arg(long, default_value = "true", help = "include lowercase letters")]
+    pub lowercase: String,
+
+    #[arg(long, default_value = "false", help = "include numbers")]
+    pub number: String,
+
+    #[arg(long, default_value = "false", help = "include symbols")]
+    pub symbol: String,
 }
 
 fn verify_input_file(filename: &str) -> Result<String, &'static str> {
