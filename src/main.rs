@@ -14,10 +14,10 @@ fn main() -> Result<()> {
 }
 
 /*
-git tag -a v1-7-csv
-git push -u origin v1-7-csv
+git tag -a v1.7-csv
+git push -u origin v1.7-csv
 
 
-git tag -d v1-7-csv
-git push origin --delete v1-7-csv
+git tag -d v1.7-csv
+git push origin --delete v1.7-csv
 */
