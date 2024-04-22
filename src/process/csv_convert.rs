@@ -4,7 +4,7 @@ use anyhow::Result;
 use csv::Reader;
 use serde::{Deserialize, Serialize};
 
-use crate::opts::OutputFormat;
+use crate::cli::OutputFormat;
 
 // 1.可以使用 #[serde(rename_all = "PascalCase")] 来自动实现字段名和属性名的映射
 // 2.也可以使用 #[serde(rename = "Kit Number")] 来实现字段名和属性名的映射
