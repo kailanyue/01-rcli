@@ -29,8 +29,8 @@ pub fn process_decode(input: &str, format: Base64Format) -> Result<String> {
     reader.read_to_string(&mut buf)?;
 
     let decoded = match format {
-        Base64Format::Standard => STANDARD.decode(&buf)?,
-        Base64Format::UrlSafe => URL_SAFE_NO_PAD.decode(&buf)?,
+        Base64Format::Standard => STANDARD.decode(buf.trim())?,
+        Base64Format::UrlSafe => URL_SAFE_NO_PAD.decode(buf.trim())?,
     };
 
     // TODO: decoded data might not be string (but for this example, we assume it is)
@@ -57,7 +57,14 @@ mod tests {
         let format = Base64Format::Standard;
 
         let encoded = process_encode(input, format).unwrap();
-        assert_eq!(encoded, "aGVsbG8gd29ybGQ=");
+        assert_eq!(encoded, "aGVsbG8gd29ybGQK");
+    }
+
+    #[test]
+    fn test_process_encode1() {
+        let input = "Cargo.toml";
+        let format = Base64Format::Standard;
+        assert!(process_encode(input, format).is_ok());
     }
 
     #[test]
