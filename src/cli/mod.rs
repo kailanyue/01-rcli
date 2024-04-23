@@ -1,6 +1,7 @@
 mod base64;
 mod csv;
 mod genpass;
+mod text;
 
 use std::path::Path;
 
@@ -10,6 +11,7 @@ use clap::Parser;
 pub use self::{
     base64::{Base64Format, Base64SubCommand},
     csv::OutputFormat,
+    text::TextSubCommand,
 };
 
 #[derive(Debug, Parser)]
@@ -28,9 +30,11 @@ pub enum SubCommand {
     GenPass(GenPassOpts),
     #[command(subcommand)]
     Base64(Base64SubCommand),
+    #[command(subcommand)]
+    Text(TextSubCommand),
 }
 
-fn verify_input_file(filename: &str) -> Result<String, &'static str> {
+fn verify_file(filename: &str) -> Result<String, &'static str> {
     // if input is "-" or file exists
     match filename == "-" || Path::new(filename).exists() {
         true => Ok(filename.into()),
@@ -43,21 +47,21 @@ mod tests {
     use super::*;
     #[test]
     fn test_file_is_exist() {
-        let result = verify_input_file("assets/juventus.csv").unwrap();
+        let result = verify_file("assets/juventus.csv").unwrap();
         assert_eq!(result, "assets/juventus.csv");
     }
 
     #[test]
     fn test_file_is_not_exist() {
-        let result = verify_input_file("assets/not_exist.csv").unwrap_err();
+        let result = verify_file("assets/not_exist.csv").unwrap_err();
         assert_eq!(result, "File does not exist");
     }
 
     #[test]
     fn test_verify_input_file() {
-        assert_eq!(verify_input_file("-"), Ok("-".into()));
-        assert_eq!(verify_input_file("*"), Err("File does not exist"));
-        assert_eq!(verify_input_file("Cargo.toml"), Ok("Cargo.toml".into()));
-        assert_eq!(verify_input_file("not-exist"), Err("File does not exist"));
+        assert_eq!(verify_file("-"), Ok("-".into()));
+        assert_eq!(verify_file("*"), Err("File does not exist"));
+        assert_eq!(verify_file("Cargo.toml"), Ok("Cargo.toml".into()));
+        assert_eq!(verify_file("not-exist"), Err("File does not exist"));
     }
 }

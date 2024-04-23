@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 use rcli::{
     process_csv, process_decode, process_encode, process_genpass, Base64SubCommand, Opts,
-    SubCommand,
+    SubCommand, TextSubCommand,
 };
 
 fn main() -> Result<()> {
@@ -34,6 +34,19 @@ fn main() -> Result<()> {
 
             Base64SubCommand::Decode(opts) => {
                 process_decode(&opts.input, opts.format)?;
+            }
+        },
+        SubCommand::Text(cmd) => match cmd {
+            TextSubCommand::Sign(_opts) => {
+                todo!()
+            }
+
+            TextSubCommand::Verify(_opts) => {
+                todo!()
+            }
+
+            TextSubCommand::Generate(_opts) => {
+                todo!()
             }
         },
     }
