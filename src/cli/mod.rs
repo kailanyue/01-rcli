@@ -3,7 +3,7 @@ mod csv;
 mod genpass;
 mod text;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use self::{csv::CsvOpts, genpass::GenPassOpts};
 use clap::Parser;
@@ -39,6 +39,15 @@ fn verify_file(filename: &str) -> Result<String, &'static str> {
     match filename == "-" || Path::new(filename).exists() {
         true => Ok(filename.into()),
         false => Err("File does not exist"),
+    }
+}
+
+fn verify_path(path: &str) -> Result<PathBuf, &'static str> {
+    let p = Path::new(path);
+
+    match p.exists() && p.is_dir() {
+        true => Ok(path.into()),
+        _ => Err("Path does not exist or is not a directory"),
     }
 }
 

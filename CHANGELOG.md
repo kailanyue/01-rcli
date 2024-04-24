@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file. See [conven
 ---
 ## [unreleased]
 
+### Features
+
+- add text cli - ([95b9728](https://github.com/kailanyue/template/commit/95b9728b239623c373b118757a7b6dc1403bfdb1)) - kailanyue
+- add text cli, part1 - ([841e794](https://github.com/kailanyue/template/commit/841e794052c6dba2acedfc112860f97fe18b5fa8)) - kailanyue
+
+---
+## [1.9](https://github.com/kailanyue/template/compare/v1.8..v1.9) - 2024-04-22
+
+### Bug Fixes
+
+- test mod fix, add resource file - ([d68c5ab](https://github.com/kailanyue/template/commit/d68c5abad61d99961b8b8312a3802cdf52a02ce7)) - kailanyue
+
+### Features
+
+- add base64 cli - ([9ebd752](https://github.com/kailanyue/template/commit/9ebd752ede6f1690c82c4398fa2e90bee3090874)) - kailanyue
+
+---
+## [1.8](https://github.com/kailanyue/template/compare/v1.7..v1.8) - 2024-04-21
+
+### Features
+
+- add output format support, json or yaml - ([fac6275](https://github.com/kailanyue/template/commit/fac6275ecb728c6497c189713c911d4dddc759d2)) - kailanyue
+- add genpass - ([8d92f74](https://github.com/kailanyue/template/commit/8d92f746222e2b4bf3fdefd4c10bab86a7bcedee)) - kailanyue
+
+---
+## [1.7] - 2024-04-21
+
+### Documentation
+
+- change doc - ([c17701c](https://github.com/kailanyue/template/commit/c17701cf6af66bcbb8658ab599e0241667b1e8c5)) - kailanyue
+
 ### Other
 
 - init - ([dfee067](https://github.com/kailanyue/template/commit/dfee06794f9ef2d88c8b3e383b3983c7ed294690)) - kailanyue

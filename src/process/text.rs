@@ -1,7 +1,8 @@
-use crate::TextSignFormat;
-use anyhow::Result;
+use crate::{process_genpass, TextSignFormat};
+use anyhow::{Ok, Result};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
-use std::io::Read;
+use rand::rngs::OsRng;
+use std::{collections::HashMap, io::Read};
 
 // 1.文本签名的接口
 pub trait TextSigner {
@@ -62,7 +63,6 @@ impl TextVerifier for Ed25519Verifier {
     }
 }
 
-#[allow(dead_code)]
 impl Blake3 {
     pub fn new(key: [u8; 32]) -> Self {
         Self { key }
@@ -75,9 +75,21 @@ impl Blake3 {
         let key = (&key[..32]).try_into()?;
         Ok(Self::new(key))
     }
+
+    fn generate() -> Result<HashMap<&'static str, Vec<u8>>> {
+        let key = process_genpass(
+            32,
+            "true".to_string(),
+            "true".to_string(),
+            "true".to_string(),
+            "true".to_string(),
+        )?;
+        let mut map = HashMap::new();
+        map.insert("blake3.txt", key.as_bytes().to_vec());
+        Ok(map)
+    }
 }
 
-#[allow(dead_code)]
 impl Ed25519Signer {
     pub fn new(key: &[u8; 32]) -> Self {
         let key = SigningKey::from_bytes(key);
@@ -89,9 +101,20 @@ impl Ed25519Signer {
         let key = (&key[..32]).try_into()?;
         Ok(Self::new(key))
     }
+
+    fn generate() -> Result<HashMap<&'static str, Vec<u8>>> {
+        let mut csprng = OsRng;
+        let sk: SigningKey = SigningKey::generate(&mut csprng);
+        let pk: VerifyingKey = (&sk).into();
+
+        let mut map = HashMap::new();
+        map.insert("ed25519.sk", sk.to_bytes().to_vec());
+        map.insert("ed25519.pk", pk.to_bytes().to_vec());
+
+        Ok(map)
+    }
 }
 
-#[allow(dead_code)]
 impl Ed25519Verifier {
     pub fn try_new(key: impl AsRef<[u8]>) -> Result<Self> {
         let key = key.as_ref();
@@ -100,7 +123,7 @@ impl Ed25519Verifier {
         Ok(Self { key })
     }
 }
-#[allow(dead_code)]
+
 pub fn process_text_sign(
     reader: &mut dyn Read,
     key: &[u8],
@@ -114,7 +137,6 @@ pub fn process_text_sign(
     signer.sign(reader)
 }
 
-#[allow(dead_code)]
 pub fn process_text_verify(
     reader: &mut dyn Read,
     key: &[u8],
@@ -126,6 +148,13 @@ pub fn process_text_verify(
         TextSignFormat::Ed25519 => Box::new(Ed25519Verifier::try_new(key)?),
     };
     verifier.verify(reader, sig)
+}
+
+pub fn process_text_key_generate(format: TextSignFormat) -> Result<HashMap<&'static str, Vec<u8>>> {
+    match format {
+        TextSignFormat::Blake3 => Blake3::generate(),
+        TextSignFormat::Ed25519 => Ed25519Signer::generate(),
+    }
 }
 
 #[cfg(test)]

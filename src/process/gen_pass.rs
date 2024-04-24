@@ -1,5 +1,4 @@
 use rand::seq::SliceRandom;
-use zxcvbn::zxcvbn;
 
 // 为了避免相近符号的混淆，移除 O 和 0
 const UPPER: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -13,7 +12,7 @@ pub fn process_genpass(
     lowercase: String,
     number: String,
     symbol: String,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<String> {
     let mut rng = rand::thread_rng();
 
     // 保存生成的密码
@@ -48,12 +47,5 @@ pub fn process_genpass(
 
     // 因为前面部分是固定模式生成的比如第一个永远都是小写...，所以需要对密码进行打乱
     password.shuffle(&mut rng);
-    let password = String::from_utf8(password)?;
-    println!("{}", password);
-
-    // output password strength in stderr
-    let estimate = zxcvbn(&password, &[])?;
-    eprintln!("Password strength: {}", estimate.score());
-
-    Ok(())
+    Ok(String::from_utf8(password)?)
 }
