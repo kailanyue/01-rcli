@@ -5,12 +5,13 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use clap::Parser;
 use rcli::{
     get_content, get_reader, process_csv, process_decode, process_encode, process_genpass,
-    process_text_key_generate, process_text_sign, process_text_verify, Base64SubCommand, Opts,
-    SubCommand, TextSubCommand,
+    process_http_serve, process_text_key_generate, process_text_sign, process_text_verify,
+    Base64SubCommand, HttpSubCommand, Opts, SubCommand, TextSubCommand,
 };
 use zxcvbn::zxcvbn;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let opts = Opts::parse();
     match opts.command {
         SubCommand::Csv(opts) => {
@@ -37,7 +38,7 @@ fn main() -> Result<()> {
             eprintln!("Password strength: {}", estimate.score());
         }
 
-        SubCommand::Base64(subcmd) => match subcmd {
+        SubCommand::Base64(opts) => match opts {
             Base64SubCommand::Encode(opts) => {
                 let mut reader = get_reader(&opts.input)?;
                 let ret = process_encode(&mut reader, opts.format)?;
@@ -50,7 +51,7 @@ fn main() -> Result<()> {
                 println!("{}", ret);
             }
         },
-        SubCommand::Text(cmd) => match cmd {
+        SubCommand::Text(opts) => match opts {
             TextSubCommand::Sign(opts) => {
                 let mut reader = get_reader(&opts.input)?;
                 let key = get_content(&opts.key)?;
@@ -79,6 +80,12 @@ fn main() -> Result<()> {
                 key.iter().for_each(|(k, v)| {
                     fs::write(opts.output_path.join(k), v).unwrap();
                 });
+            }
+        },
+
+        SubCommand::Http(opts) => match opts {
+            HttpSubCommand::Serve(opts) => {
+                process_http_serve(opts.dir, opts.port).await?;
             }
         },
     }
