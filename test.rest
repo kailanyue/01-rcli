@@ -2,6 +2,9 @@
 GET http://localhost:8080/README.md
 
 ### Test static file with tower-http
-
-GET http://localhost:8080/tower/Cargo.toml
+GET http://localhost:8080/Cargo.toml
 Range: bytes=0-100
+
+
+### test directory
+GET http://localhost:8080/tower/docs

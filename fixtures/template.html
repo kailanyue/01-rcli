@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Current Path: {{current_path}}</title>
+</head>
+<body>
+    <h1>Current Path: {{current_path}}</h1>
+    <ul>
+        {{#each directories}}
+        <li>Directory: {{this}}</li>
+        {{/each}}
+        {{#each files}}
+        <li>File: {{this}}</li>
+        {{/each}}
+    </ul>
+</body>
+</html>
