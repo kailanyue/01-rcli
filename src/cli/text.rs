@@ -7,8 +7,8 @@ use enum_dispatch::enum_dispatch;
 use tokio::fs;
 
 use crate::{
-    get_content, get_reader, process_text_key_generate, process_text_sign, process_text_verify,
-    CmdExector,
+    get_content, get_reader, parse_base64_format, process_text_decrypt, process_text_encrypt,
+    process_text_key_generate, process_text_sign, process_text_verify, Base64Format, CmdExector,
 };
 
 use super::{verify_file, verify_path};
@@ -22,6 +22,34 @@ pub enum TextSubCommand {
     Verify(TextVerifyOpts),
     #[command(about = "Generate a random blake3 key or ed25519 key pair")]
     Generate(KeyGenerateOpts),
+    #[command(about = "Encrypt a text with a public/session key")]
+    Encrypt(EncryptOpts),
+    #[command(about = "Decrypt a text with a private/session key")]
+    Decrypt(DecryptOpts),
+}
+
+#[derive(Debug, Parser)]
+pub struct EncryptOpts {
+    #[arg(short, long, default_value = "-", value_parser = verify_file, help = "input file path")]
+    pub input: String,
+    #[arg(short, long, value_parser = verify_file,  help = "key file path")]
+    pub key: String,
+    #[arg(long, value_parser = verify_file,  help = "key file path")]
+    pub nonce: String,
+    #[arg(long, default_value = "standard", value_parser = parse_base64_format, help = "base64 format")]
+    pub format: Base64Format,
+}
+
+#[derive(Debug, Parser)]
+pub struct DecryptOpts {
+    #[arg(short, long, default_value = "-", value_parser = verify_file, help = "input file path")]
+    pub input: String,
+    #[arg(short, long, value_parser = verify_file,  help = "key file path")]
+    pub key: String,
+    #[arg(long, value_parser = verify_file,  help = "key file path")]
+    pub nonce: String,
+    #[arg(long, default_value = "standard", value_parser = parse_base64_format, help = "text sign format")]
+    pub format: Base64Format,
 }
 
 #[derive(Debug, Parser)]
@@ -125,6 +153,30 @@ impl CmdExector for KeyGenerateOpts {
         for (k, v) in key {
             fs::write(self.output_path.join(k), v).await?;
         }
+        Ok(())
+    }
+}
+
+impl CmdExector for EncryptOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let mut reader = get_reader(&self.input)?;
+        let key = get_content(&self.key)?;
+        let nonce = get_content(&self.nonce)?;
+
+        let encrypt_str = process_text_encrypt(&mut reader, &key, &nonce, self.format)?;
+        println!("encrypt result:{}", encrypt_str);
+        Ok(())
+    }
+}
+
+impl CmdExector for DecryptOpts {
+    async fn execute(self) -> anyhow::Result<()> {
+        let mut reader = get_reader(&self.input)?;
+        let key = get_content(&self.key)?;
+        let nonce = get_content(&self.nonce)?;
+
+        let decrypt_str = process_text_decrypt(&mut reader, &key, &nonce, self.format)?;
+        println!("decrypt result:{}", decrypt_str);
         Ok(())
     }
 }

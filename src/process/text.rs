@@ -1,8 +1,17 @@
-use crate::{process_genpass, TextSignFormat};
+use crate::{process_genpass, Base64Format, TextSignFormat};
 use anyhow::{Ok, Result};
+use base64::{
+    engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+    Engine,
+};
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use rand::rngs::OsRng;
 use std::{collections::HashMap, io::Read};
+
+use chacha20poly1305::{
+    aead::{Aead, KeyInit},
+    ChaCha20Poly1305, Key, Nonce,
+};
 
 // 1.文本签名的接口
 pub trait TextSigner {
@@ -12,6 +21,15 @@ pub trait TextSigner {
 // 2.文本验证的接口
 pub trait TextVerifier {
     fn verify(&self, reader: &mut dyn Read, sig: &[u8]) -> Result<bool>;
+}
+
+// 3.文本加密的接口
+pub trait TextEncrypt {
+    fn encrypt(&self, format: Base64Format, reader: &mut dyn Read) -> Result<String>;
+}
+
+pub trait TextDecrypt {
+    fn decrypt(&self, format: Base64Format, reader: &mut dyn Read) -> Result<String>;
 }
 
 pub struct Blake3 {
@@ -24,6 +42,11 @@ pub struct Ed25519Signer {
 
 pub struct Ed25519Verifier {
     key: VerifyingKey,
+}
+
+pub struct ChaCha20 {
+    key: [u8; 32],
+    nonce: [u8; 12],
 }
 
 impl TextSigner for Blake3 {
@@ -60,6 +83,60 @@ impl TextVerifier for Ed25519Verifier {
         let sig = (&sig[..64]).try_into()?;
         let signature = Signature::from_bytes(sig);
         Ok(self.key.verify(&buf, &signature).is_ok())
+    }
+}
+
+impl TextEncrypt for ChaCha20 {
+    fn encrypt(
+        &self,
+        format: Base64Format,
+        reader: &mut dyn Read,
+    ) -> Result<String, anyhow::Error> {
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf)?;
+
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(&self.key));
+        let ciphertext = cipher.encrypt(Nonce::from_slice(&self.nonce), buf.as_ref());
+
+        match ciphertext.is_ok() {
+            true => match format {
+                Base64Format::Standard => Ok(STANDARD.encode(ciphertext.unwrap())),
+                Base64Format::UrlSafe => Ok(URL_SAFE_NO_PAD.encode(ciphertext.unwrap())),
+            },
+            false => Err(anyhow::anyhow!("encryptor failed")),
+        }
+    }
+}
+
+impl TextDecrypt for ChaCha20 {
+    fn decrypt(
+        &self,
+        format: Base64Format,
+        reader: &mut dyn Read,
+    ) -> Result<String, anyhow::Error> {
+        let mut buf = Vec::new();
+        reader.read_to_end(&mut buf)?;
+
+        let ciphertext_decode = match format {
+            Base64Format::Standard => STANDARD.decode(&buf),
+            Base64Format::UrlSafe => URL_SAFE_NO_PAD.decode(&buf),
+        };
+
+        let cipher = ChaCha20Poly1305::new(Key::from_slice(&self.key));
+
+        match ciphertext_decode.is_ok() {
+            true => {
+                let ciphertext = cipher.decrypt(
+                    Nonce::from_slice(&self.nonce),
+                    ciphertext_decode.unwrap().as_ref(),
+                );
+                match ciphertext.is_ok() {
+                    true => Ok(String::from_utf8_lossy(&ciphertext.unwrap()).to_string()),
+                    false => Err(anyhow::anyhow!("decrypt failed")),
+                }
+            }
+            false => Err(anyhow::anyhow!("input decode failed")),
+        }
     }
 }
 
@@ -124,6 +201,20 @@ impl Ed25519Verifier {
     }
 }
 
+impl ChaCha20 {
+    pub fn new(key: [u8; 32], nonce: [u8; 12]) -> Self {
+        Self { key, nonce }
+    }
+
+    pub fn try_new(key: impl AsRef<[u8]>, nonce: impl AsRef<[u8]>) -> Result<Self> {
+        let key = key.as_ref();
+        let nonce = nonce.as_ref();
+        let key = (&key[..32]).try_into()?;
+        let nonce = (&nonce[..12]).try_into()?;
+        Ok(Self::new(key, nonce))
+    }
+}
+
 pub fn process_text_sign(
     reader: &mut dyn Read,
     key: &[u8],
@@ -157,12 +248,40 @@ pub fn process_text_key_generate(format: TextSignFormat) -> Result<HashMap<&'sta
     }
 }
 
+pub fn process_text_encrypt(
+    reader: &mut dyn Read,
+    key: &[u8],
+    nonce: &[u8],
+    format: Base64Format,
+) -> Result<String> {
+    let chacha20 = ChaCha20::try_new(key, nonce)?;
+    Ok(chacha20.encrypt(format, reader)?)
+}
+
+pub fn process_text_decrypt(
+    reader: &mut dyn Read,
+    key: &[u8],
+    nonce: &[u8],
+    format: Base64Format,
+) -> Result<String> {
+    let chacha20 = ChaCha20::try_new(key, nonce)?;
+    Ok(chacha20.decrypt(format, reader)?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+    use base64::{
+        engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+        Engine,
+    };
 
     const KEY: &[u8] = include_bytes!("../../fixtures/blake3.txt");
+
+    use chacha20poly1305::{
+        aead::{Aead, KeyInit},
+        ChaCha20Poly1305, Key, Nonce,
+    };
 
     #[test]
     fn test_process_text_sign() -> Result<()> {
@@ -184,5 +303,44 @@ mod tests {
         let ret = process_text_verify(&mut reader, KEY, &sig, format)?;
         assert!(ret);
         Ok(())
+    }
+    #[test]
+    fn test_process_text_chacha20() -> Result<()> {
+        let mut reader = "hello world!".as_bytes();
+        let format = Base64Format::Standard;
+        let key: &[u8] = include_bytes!("../../fixtures/chacha20_key.txt");
+        let nonce: &[u8] = include_bytes!("../../fixtures/chacha20_nonce.txt");
+
+        let encrypt_str = process_text_encrypt(&mut reader, key, nonce, format)?;
+
+        let mut encrypt_str = encrypt_str.as_bytes();
+        let decrypt_str = process_text_decrypt(&mut encrypt_str, key, nonce, format)?;
+
+        assert_eq!(decrypt_str, "hello world!");
+        Ok(())
+    }
+
+    #[test]
+    fn test_chacha20() {
+        // let key = Key::from_slice(b"an example very very secret key.");
+        let key = Key::from_slice(&KEY[0..32]);
+        let cipher = ChaCha20Poly1305::new(key);
+        let nonce = Nonce::from_slice(&KEY[0..12]);
+
+        let ciphertext = cipher.encrypt(nonce, b"hello world!".as_ref()).unwrap();
+        println!("ciphertext: {:?}", String::from_utf8_lossy(&ciphertext));
+
+        let ciphertext_base64 = STANDARD.encode(&ciphertext);
+        println!("ciphertext_base64: {}", ciphertext_base64);
+
+        let ciphertext_decode: Vec<u8> = STANDARD.decode(ciphertext_base64).unwrap();
+        println!(
+            "ciphertext_decode: {}",
+            String::from_utf8_lossy(&ciphertext_decode)
+        );
+
+        let plaintext = cipher.decrypt(nonce, ciphertext_decode.as_ref()).unwrap();
+        println!("plaintext: {:?}", String::from_utf8_lossy(&plaintext));
+        assert_eq!(&plaintext, b"hello world!");
     }
 }
