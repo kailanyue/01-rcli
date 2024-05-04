@@ -32,32 +32,6 @@ pub async fn process_http_serve(path: PathBuf, port: u16) -> Result<()> {
     Ok(())
 }
 
-// async fn file_handler(
-//     State(state): State<Arc<HttpServeState>>,
-//     Path(path): Path<String>,
-// ) -> (StatusCode, String) {
-//     let p = std::path::Path::new(&state.path).join(path);
-//     info!("Serving file {:?}", p);
-
-//     if !p.exists() {
-//         (
-//             StatusCode::NOT_FOUND,
-//             format!("File {} note found", p.display()),
-//         )
-//     } else {
-//         match tokio::fs::read_to_string(p).await {
-//             Ok(content) => {
-//                 info!("Read {} bytes", content.len());
-//                 (StatusCode::OK, content)
-//             }
-//             Err(e) => {
-//                 warn!("Error reading file: {:?}", e);
-//                 (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
-//             }
-//         }
-//     }
-// }
-
 async fn file_handler(
     State(state): State<Arc<HttpServeState>>,
     Path(path): Path<String>,
@@ -78,14 +52,30 @@ async fn file_handler(
                 }
             },
             false => {
-                let dir = std::fs::read_dir(p.clone()).unwrap();
+                let dir = match std::fs::read_dir(p.clone()) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        return (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            format!("Failed to read directory: {}", e),
+                        )
+                    }
+                };
 
                 let mut directories = Vec::new();
                 let mut files = Vec::new();
 
-                // 遍历目录
+                // 遍历目录和文件
                 for entry in dir {
-                    let entry = entry.unwrap();
+                    let entry = match entry {
+                        Ok(e) => e,
+                        Err(e) => {
+                            return (
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                format!("Failed to read directory entry: {}", e),
+                            )
+                        }
+                    };
                     let path = entry.path();
                     if path.is_dir() {
                         directories.push(path.display().to_string());

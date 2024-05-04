@@ -87,12 +87,9 @@ pub fn process_jwt_verify(
             println!("{:?}", c.header);
             Ok(true)
         }
-
-        Err(err) => match *err.kind() {
-            ErrorKind::InvalidToken => panic!("Token is invalid"),
-            ErrorKind::InvalidIssuer => panic!("Issuer is invalid"),
-            _ => Err(anyhow::anyhow!("Some other errors")),
-        },
+        Err(err) if *err.kind() == ErrorKind::InvalidToken => panic!("Token is invalid"),
+        Err(err) if *err.kind() == ErrorKind::InvalidIssuer => panic!("Issuer is invalid"),
+        _ => Err(anyhow::anyhow!("Some other errors")),
     }
 }
 #[cfg(test)]
@@ -199,11 +196,9 @@ mod tests {
         let token_data = match decode::<Claims>(&token, &DecodingKey::from_secret(key), &validation)
         {
             Ok(c) => c,
-            Err(err) => match *err.kind() {
-                ErrorKind::InvalidToken => panic!("Token is invalid"), // Example on how to handle a specific error
-                ErrorKind::InvalidIssuer => panic!("Issuer is invalid"), // Example on how to handle a specific error
-                _ => panic!("Some other errors"),
-            },
+            Err(err) if *err.kind() == ErrorKind::InvalidToken => panic!("Token is invalid"),
+            Err(err) if *err.kind() == ErrorKind::InvalidIssuer => panic!("Issuer is invalid"),
+            _ => panic!("Some other errors"),
         };
 
         println!("{:?}", token_data.claims);
