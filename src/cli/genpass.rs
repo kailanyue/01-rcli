@@ -39,3 +39,28 @@ impl CmdExector for GenPassOpts {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_genpass() {
+        let opts = GenPassOpts {
+            length: 16,
+            uppercase: "true".to_string(),
+            lowercase: "true".to_string(),
+            number: "false".to_string(),
+            symbol: "false".to_string(),
+        };
+        let ret = process_genpass(
+            opts.length,
+            opts.uppercase,
+            opts.lowercase,
+            opts.number,
+            opts.symbol,
+        )
+        .unwrap();
+        println!("{}", ret);
+    }
+}

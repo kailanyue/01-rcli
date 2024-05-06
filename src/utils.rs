@@ -15,3 +15,20 @@ pub fn get_content(input: &str) -> Result<Vec<u8>> {
     reader.read_to_end(&mut buf)?;
     Ok(buf)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_content() {
+        let result = get_content("fixtures/hello_world.txt").unwrap();
+        assert_eq!(String::from_utf8_lossy(&result).trim(), "hello world");
+    }
+
+    #[test]
+    fn test_get_reader() {
+        let mut result = get_reader("fixtures/hello_world.txt").unwrap();
+        assert_eq!(result.read_to_end(&mut Vec::new()).unwrap(), 12);
+    }
+}

@@ -45,3 +45,15 @@ pub fn process_csv(input: &str, output: String, format: OutputFormat) -> Result<
     fs::write(output, content)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_process_csv() {
+        let input = "assets/juventus.csv";
+        let output = "assets/juventus.json";
+        process_csv(input, output.to_string(), OutputFormat::Json).unwrap();
+    }
+}

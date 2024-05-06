@@ -1,2 +1,4 @@
 /target
 output.*
+tarpaulin-report.html
+/assets/*.json
