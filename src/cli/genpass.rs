@@ -33,7 +33,7 @@ impl CmdExector for GenPassOpts {
         println!("{}", ret);
 
         // output password strength in stderr
-        let estimate = zxcvbn(&ret, &[])?;
+        let estimate = zxcvbn(&ret, &[]);
         eprintln!("Password strength: {}", estimate.score());
 
         Ok(())
